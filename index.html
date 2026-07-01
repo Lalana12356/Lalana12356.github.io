@@ -1,10 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My First Website</title>
+    <meta charset="UTF-8">
+    <title>Live DHT11 Weather Station</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background: #eef2f3; padding: 40px; color: #333; }
+        h1 { color: #2c3e50; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #2980b9; color: white; border: none; border-radius: 25px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button:hover { background: #3498db; }
+        .container { display: flex; justify-content: center; gap: 20px; margin-top: 30px; flex-wrap: wrap; }
+        .card { background: white; padding: 25px; border-radius: 15px; width: 200px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .card h2 { margin: 0 0 10px 0; font-size: 18px; color: #7f8c8d; }
+        .value { font-size: 42px; font-weight: bold; color: #2c3e50; }
+    </style>
 </head>
 <body>
-  <h1>Hello, I am learning GitHub Pages!</h1>
-  <p>This is my first website.</p>
+
+    <h1>Live DHT11 Sensor Station</h1>
+    <p>Connect your Arduino via USB to view real-time environmental data.</p>
+    
+    <button id="connectBtn">Connect Sensor</button>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Temperature</h2>
+            <div id="tempVal" class="value">-- °C</div>
+        </div>
+        <div class="card">
+            <h2>Humidity</h2>
+            <div id="humVal" class="value">-- %</div>
+        </div>
+    </div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const tempVal = document.getElementById('tempVal');
+        const humVal = document.getElementById('humVal');
+
+        connectBtn.addEventListener('click', async () => {
+            if ('serial' in navigator) {
+                try {
+                    const port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 9600 });
+                    
+                    connectBtn.textContent = "Connected Live";
+                    connectBtn.style.background = "#27ae60";
+                    connectBtn.disabled = true;
+
+                    const textDecoder = new TextDecoderStream();
+                    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                    const reader = textDecoder.readable.getReader();
+
+                    let buffer = "";
+
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) { reader.releaseLock(); break; }
+                        
+                        if (value) {
+                            buffer += value;
+                            let parts = buffer.split('\n');
+                            buffer = parts.pop(); 
+
+                            for (let line of parts) {
+                                line = line.trim();
+                                if (line) {
+                                    // Split the comma-separated values (Temperature,Humidity)
+                                    let data = line.split(',');
+                                    if(data.length === 2 && data[0] !== "Error") {
+                                        tempVal.textContent = data[0] + " °C";
+                                        humVal.textContent = data[1] + " %";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert("Connection failed. Check your connection or serial monitor settings.");
+                }
+            } else {
+                alert("Web Serial API not supported. Use Google Chrome or Microsoft Edge on desktop.");
+            }
+        });
+    </script>
 </body>
 </html>
