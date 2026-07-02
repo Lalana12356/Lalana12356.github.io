@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Atmospheric Analytics Station</title>
     <style>
-        /* Modern Design Palette with Sage Green Accents */
         body { 
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif; 
-            background-color: #f3f7f5; /* Soft, warm background tint */
+            background-color: #f3f7f5; 
             margin: 0; 
             padding: 20px; 
             display: flex;
@@ -17,7 +16,7 @@
             min-height: 100vh;
         }
         .dashboard { 
-            max-width: 500px; 
+            max-width: 600px; 
             width: 100%;
             background: #ffffff; 
             padding: 30px; 
@@ -28,15 +27,13 @@
         h1 { 
             color: #2d3748; 
             font-size: 24px; 
-            margin-top: 0;
-            margin-bottom: 5px; 
+            margin: 0 0 5px 0; 
         }
         .subtitle {
             color: #718096;
             font-size: 14px;
             margin-bottom: 20px;
         }
-        /* Dynamic Status Badge */
         .aqi-badge {
             display: inline-block;
             padding: 8px 24px;
@@ -44,44 +41,54 @@
             font-weight: bold;
             color: #ffffff;
             border-radius: 30px;
-            background-color: #a0aec0; /* Default gray before loading */
-            margin-bottom: 25px;
+            background-color: #a0aec0; 
+            margin-bottom: 20px;
             transition: background-color 0.5s ease;
             text-transform: uppercase;
         }
         .section-title {
             text-align: left;
-            font-size: 14px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #8f9d92; /* Sage-tinted label text */
-            margin-top: 20px;
-            margin-bottom: 8px;
+            color: #8f9d92; 
+            margin-top: 25px;
+            margin-bottom: 10px;
             border-bottom: 1px solid #edf2f7;
             padding-bottom: 4px;
         }
-        /* Metric Layout Cards */
+        /* Grid container for a cleaner dashboard profile */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        /* Full width utility for specific elements */
+        .full-width {
+            grid-column: span 2;
+        }
         .metric-card { 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            padding: 14px 18px; 
-            margin: 10px 0; 
+            padding: 14px 16px; 
             background: #f8faf9; 
             border-radius: 8px; 
-            border-left: 4px solid #8fa89b; /* Elegant Sage Green left accent line */
+            border-left: 4px solid #8fa89b; 
             transition: transform 0.2s ease;
         }
         .metric-card:hover {
-            transform: translateX(3px);
+            transform: translateX(2px);
         }
         .label { 
             font-weight: 500; 
             color: #4a5568; 
+            font-size: 14px;
         }
         .value { 
             font-weight: 700; 
             color: #1a202c; 
+            font-size: 15px;
         }
         .updating-tag { 
             font-size: 11px; 
@@ -96,24 +103,32 @@
     <h1>Atmospheric Analytics Station</h1>
     <div class="subtitle">Live Sensor Telemetry Array via IoT Gateway</div>
     
-    <!-- Dynamic Air Quality Alert Badge -->
     <div class="aqi-badge" id="aqiBadge">Connecting to Cloud...</div>
     
     <div class="section-title">Meteorological Context</div>
-    <div class="metric-card"><span class="label">Ambient Temperature</span><span class="value" id="temp">-- °C</span></div>
-    <div class="metric-card"><span class="label">Relative Humidity</span><span class="value" id="hum">-- %</span></div>
+    <div class="metrics-grid">
+        <div class="metric-card"><span class="label">Temperature</span><span class="value" id="temp">-- °C</span></div>
+        <div class="metric-card"><span class="label">Humidity</span><span class="value" id="hum">-- %</span></div>
+    </div>
     
     <div class="section-title">Particulate Matter</div>
-    <div class="metric-card"><span class="label">Suspended Dust Density</span><span class="value" id="dust">-- pcs/0.01cf</span></div>
+    <div class="metrics-grid">
+        <div class="metric-card full-width"><span class="label">Suspended Dust Density</span><span class="value" id="dust">-- pcs/0.01cf</span></div>
+    </div>
     
     <div class="section-title">Gas Matrix Quantities</div>
-    <div class="metric-card"><span class="label">Carbon Dioxide (CO2)</span><span class="value" id="co2">-- ppm</span></div>
+    <div class="metrics-grid">
+        <div class="metric-card"><span class="label">Carbon Dioxide (CO2)</span><span class="value" id="co2">-- ppm</span></div>
+        <div class="metric-card"><span class="label">Ammonia (NH3)</span><span class="value" id="nh3">-- ppm</span></div>
+        <div class="metric-card"><span class="label">Acetone Vapors</span><span class="value" id="acetone">-- ppm</span></div>
+        <div class="metric-card"><span class="label">LPG / Combustible</span><span class="value" id="lpg">-- ppm</span></div>
+        <div class="metric-card full-width"><span class="label">Smoke Level</span><span class="value" id="smoke">-- ppm</span></div>
+    </div>
     
     <div class="updating-tag">Data syncs automatically every 15 seconds.</div>
 </div>
 
 <script>
-    // Configured with your specific ThingSpeak Channel ID
     const CHANNEL_ID = "3420367"; 
 
     async function fetchIoTCloudData() {
@@ -123,29 +138,37 @@
             const data = await response.json();
             
             if (data) {
-                // 1. Process and convert string feeds to structured numbers
+                // Parse all 8 incoming fields
                 const temperature = parseFloat(data.field1);
                 const humidity = parseFloat(data.field2);
                 const dust = parseFloat(data.field3);
-                const co2 = parseInt(data.field4);
+                const co2 = parseFloat(data.field4);
+                const nh3 = parseFloat(data.field5);
+                const acetone = parseFloat(data.field6);
+                const lpg = parseFloat(data.field7);
+                const smoke = parseFloat(data.field8);
 
-                // 2. Inject numbers into the web elements
+                // Inject metrics into web layout variables
                 document.getElementById('temp').innerText = (isNaN(temperature) ? "--" : temperature.toFixed(1)) + " °C";
                 document.getElementById('hum').innerText = (isNaN(humidity) ? "--" : humidity.toFixed(1)) + " %";
-                document.getElementById('dust').innerText = (isNaN(dust) ? "--" : dust.toFixed(2)) + " pcs/0.01cf";
-                document.getElementById('co2').innerText = (isNaN(co2) ? "--" : co2) + " ppm";
+                document.getElementById('dust').innerText = (isNaN(dust) ? "--" : dust.toFixed(2)) + " pcs";
+                document.getElementById('co2').innerText = (isNaN(co2) ? "--" : co2.toFixed(1)) + " ppm";
+                document.getElementById('nh3').innerText = (isNaN(nh3) ? "--" : nh3.toFixed(1)) + " ppm";
+                document.getElementById('acetone').innerText = (isNaN(acetone) ? "--" : acetone.toFixed(1)) + " ppm";
+                document.getElementById('lpg').innerText = (isNaN(lpg) ? "--" : lpg.toFixed(1)) + " ppm";
+                document.getElementById('smoke').innerText = (isNaN(smoke) ? "--" : smoke.toFixed(1)) + " ppm";
 
-                // 3. Dynamic Air Quality Assessment Engine matching your thresholds
+                // Mirroring your exact safety threshold logic evaluation
                 const badge = document.getElementById('aqiBadge');
-                if (co2 > 1200 || dust > 150.0) {
+                if (co2 > 1200 || smoke > 15 || lpg > 8 || dust > 150.0) {
                     badge.innerText = "Air Quality: BAD";
-                    badge.style.backgroundColor = "#e63946"; // Clear alert Crimson Red
-                } else if (co2 > 800 || dust > 50.0) {
+                    badge.style.backgroundColor = "#e63946"; 
+                } else if (co2 > 800 || smoke > 5 || nh3 > 10 || acetone > 5 || dust > 50.0) {
                     badge.innerText = "Air Quality: MODERATE";
-                    badge.style.backgroundColor = "#ffb703"; // Alert Golden Yellow
+                    badge.style.backgroundColor = "#ffb703"; 
                 } else {
                     badge.innerText = "Air Quality: CLEAN";
-                    badge.style.backgroundColor = "#2ec4b6"; // Clean Emerald/Teal
+                    badge.style.backgroundColor = "#2ec4b6"; 
                 }
             }
         } catch (error) {
@@ -155,10 +178,7 @@
         }
     }
 
-    // Initialize data connection immediately upon loading
     fetchIoTCloudData();
-
-    // Re-verify and refresh readings every 15000 milliseconds
     setInterval(fetchIoTCloudData, 15000);
 </script>
 
